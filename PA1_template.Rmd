@@ -1,25 +1,129 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "reproducible_research_project_1"
+author: "Juan Osobampo"
+date: "16/12/2020"
+output: html_document
 ---
 
+```{r setup, include=T}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+zipUrl <-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+zipFile <- "repdata_data_activity.zip"
 
-## Loading and preprocessing the data
+if (!file.exists(zipFile)) {
+  download.file(zipUrl, zipFile, mode = "wb")
+}
+
+# unzip zip file containing data if data directory doesn't already exist
+dataPath <- "activity.csv"
+if (!file.exists(dataPath)) {
+  unzip(zipFile)
+}
+activity <- read.csv("activity.csv")
+head(activity)
+
+```
+```{r, Changing type}
+#Turn the column into date class
+activity$date <- as.Date(activity$date, tryFormats = c("%Y-%m-%d"))
+#Creating histogram
+ag_act <- aggregate(activity$steps , by= list(activity$date), FUN = sum)
+
+#Replace NA's in the DF to 0
+ag_act2<- ag_act
+ag_act2[is.na(ag_act2)] <- 0
+
+plot1 <- ggplot(ag_act2, aes(Group.1, x)) + geom_histogram(stat='identity')+ xlab("Date") + ylab("Steps")+ ggtitle("Steps by Day")
+plot1
+```
+```{r, step 3 of coursera assignment}
+#As there are  NA values in activity df, we change those to 0 to get means
+activity2<- activity
+activity2[is.na(activity2)] <- 0
+p3 <- aggregate(activity2$steps , by= list(activity2$date), FUN = mean)
+ps3 <- ggplot(p3, aes(Group.1, x)) + geom_histogram(stat='identity')+ xlab("Date") + ylab("Steps")+ ggtitle("Mean Steps by Day")
+ps3
+#Median of steps recorded by day
+median_and_mean_steps <- summary(p3$x)
+median_and_mean_steps
+```
+#### As for the step 4 instruction, we are plotting the mean number of steps by day
+```{r, step 4}
+
+ps3 <- ggplot(p3, aes(Group.1, x)) + geom_line(stat='identity')+ xlab("Date") + ylab("Steps")+ ggtitle("Mean Steps by Day")
+ps3
+median_and_mean_steps_ps3 <- summary(ps3)
+```
+
+#### For the step 5, we must get the most steps possible in a 5-min interval
+
+```{r, step 5}
+days <- as.data.frame( weekdays(as.Date(activity2$date)))
+ag_act3 <- as.data.frame(bind_cols( activity2, days))
+max_steps <- max(activity2$steps)
+match(max_steps, table= activity2$steps)
+activity2[16492,]
+plot_step5 <- ggplot(ag_act3, aes(interval, steps)) + geom_line(stat='identity')+ xlab("5-min Intervals") + ylab("Steps")+ ggtitle("Steps by Interval")
+plot_step5
+```
+
+#### For the step 6, we are asked for an strategy to work with NA's in the data frame, an option is to turn them into 0
+-6.1. To work with the data frame, we change de date column into Date class
+```{r, step 6}
+ #Turn the column into date class
+activity$date <- as.Date(activity$date, tryFormats = c("%Y-%m-%d"))
+```
+-6.2. To avoid multiple same-day data, we use aggregate
+ ```{r}
+ #Creating histogram
+ag_act <- aggregate(activity$steps , by= list(activity$date), FUN = sum)
+```
+-6.3. Finally, we count the amount of NA, then change'em to 0 and store them into ag_act2
+```{r}
+# Count na
+NA_number <- colSums(is.na(ag_act))
+NA_number
+# There are 8 NA
+ #Replace NA's in the DF to 0
+ag_act2<- ag_act
+ag_act2[is.na(ag_act2)] <- 0
+
+```
+
+### For the step 7, we include  the NA(now 0) and plot it
+```{r, step 7}
+plot1 <- ggplot(ag_act2, aes(Group.1, x)) + geom_histogram(stat='identity')+ xlab("Date") + ylab("Steps")+ ggtitle("Steps by Day")
+plot1
 
 
-
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
+```
+###A dataset identical to the original is now stored un ag_act3 , being the main difference that NAs are now 0, in addition, there are the names of the day next to the dates
+```{r}
+ag_act3
+summary(ag_act3)
+```
+### For the step 8 we must find the name of the day that corresponds the date, then we subset by the day of the week to plot the steps by 5-min intervals, to display all 7 plot we use the require(gridExtra) function
+```{r, step 8}
 
 
-
-## Are there differences in activity patterns between weekdays and weekends?
+monday <- subset.data.frame(ag_act3, ag_act3$`weekdays(as.Date(activity2$date))` == "lunes", select = c(steps, interval))
+tuesday <- subset.data.frame(ag_act3, ag_act3$`weekdays(as.Date(activity2$date))` == "martes", select = c(steps, interval))
+wednesday <- subset.data.frame(ag_act3, ag_act3$`weekdays(as.Date(activity2$date))` == "miércoles", select = c(steps, interval))
+thursday <- subset.data.frame(ag_act3, ag_act3$`weekdays(as.Date(activity2$date))` == "jueves", select = c(steps, interval))
+friday <- subset.data.frame(ag_act3, ag_act3$`weekdays(as.Date(activity2$date))` == "viernes", select = c(steps, interval))
+saturday <- subset.data.frame(ag_act3, ag_act3$`weekdays(as.Date(activity2$date))` == "sábado", select = c(steps, interval))
+sunday <- subset.data.frame(ag_act3, ag_act3$`weekdays(as.Date(activity2$date))` == "domingo", select = c(steps, interval))
+require(gridExtra)
+ps8.1 <- ggplot(monday, aes(interval, steps)) + geom_line(stat='identity')+ xlab("Monday 5-min Intervals") + ylab("Steps")+ ggtitle("Monday Steps by Interval")
+ps8.2 <- ggplot(tuesday, aes(interval, steps)) + geom_line(stat='identity')+ xlab("Tuesday 5-min Intervals") + ylab("Steps")+ ggtitle("Tuesday Steps by Interval")
+ps8.3 <- ggplot(wednesday, aes(interval, steps)) + geom_line(stat='identity')+ xlab("Wednesday 5-min Intervals") + ylab("Steps")+ ggtitle("Wednesday Steps by Interval")
+ps8.4 <- ggplot(thursday, aes(interval, steps)) + geom_line(stat='identity')+ xlab("Thursday 5-min Intervals") + ylab("Steps")+ ggtitle("Thursday Steps by Interval")
+ps8.5 <- ggplot(friday, aes(interval, steps)) + geom_line(stat='identity')+ xlab("Friday 5-min Intervals") + ylab("Steps")+ ggtitle("Friday Steps by Interval")
+ps8.6 <- ggplot(saturday, aes(interval, steps)) + geom_line(stat='identity')+ xlab("Saturday 5-min Intervals") + ylab("Steps")+ ggtitle("Saturday Steps by Interval")
+ps8.7 <- ggplot(sunday, aes(interval, steps)) + geom_line(stat='identity' )+ xlab("Sunday 5-min Intervals") + ylab("Steps")+ ggtitle("Sunday Steps by Interval")
+require(gridExtra)
+grid.arrange(ps8.1, ps8.2, ps8.3, ps8.4, ps8.5, ps8.6, ps8.7, ncol=7)
+```
